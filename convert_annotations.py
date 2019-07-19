@@ -52,15 +52,18 @@ if __name__ == '__main__':
         # sort the elements
         images, labels = sorted(images), sorted(labels)
 
-        number_files = 2048
-
-        images = images[:number_files]
+        # number_files = 2048
+        #
+        # images = images[:number_files]
 
         if not os.path.exists(os.path.join('.', 'deepdrive', '{}{}'.format(fold, year))):
             mkdir_p(os.path.join('.', 'deepdrive', '{}{}'.format(fold, year)))
 
         if not os.path.exists(os.path.join('.', 'deepdrive', 'annotations')):
             mkdir_p(os.path.join('.', 'deepdrive', 'annotations'))
+
+        if not os.path.exists(os.path.join('.', 'deepdrive_yolo',)):
+            mkdir_p(os.path.join('.', 'deepdrive_yolo'))
 
 
         label_object = {
@@ -90,7 +93,6 @@ if __name__ == '__main__':
                 'id': i + 1,
                 'name': c
             }]
-
 
         for i, im in enumerate(images):
             head_im, tail_im = os.path.split(im)
