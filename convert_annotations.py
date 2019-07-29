@@ -7,6 +7,9 @@ from datetime import datetime
 
 from PIL import Image
 
+from utils.boxes import Boxes
+
+
 def get_files_in_path(path, m_regex=None):
     if m_regex is not None:
         if m_regex is str:
@@ -133,42 +136,29 @@ if __name__ == '__main__':
             annotations = []
             for tmp in obj['frames'][0]['objects']:
                 if 'box2d' in tmp:
-                    label_id = DEEPDRIVE_LABELS.index(tmp['category']) + 1
-                    box2d = tmp['box2d']
-
-                    box_size = (box2d['y2'] - box2d['y1']) * (box2d['x2'] - box2d['x1'])
-                    box_width = box2d['x2'] - box2d['x1']
-                    box_height = box2d['y2'] - box2d['y1']
-
-                    cx = box2d['x1'] + box_width / 2
-                    cy = box2d['y1'] + box_height / 2
+                    box = Boxes(
+                        xmin=tmp['box2d']['x1'], xmax=tmp['box2d']['x2'],
+                        ymin=tmp['box2d']['y1'], ymax=tmp['box2d']['y2'],
+                        label=DEEPDRIVE_LABELS.index(tmp['category']) + 1
+                    )
 
                     label_object['annotations'] += [
                         {
                             'segmentation': [],
-                            'area': box_size,
                             'iscrowd': 0,
                             'image_id': i,
                             'id': overall_annotation_id,
-                            # 'image_id': tail_im[:-4],
-                            # 'id': tail_im[:-4],
-                            'category_id': label_id,
-                            # 'bbox': [
-                            #     box2d['y1'], box2d['x1'],
-                            #     box2d['y2'], box2d['x2']
-                            # ],
-                            'bbox': [cx, cy, box_width, box_height]
+                            'area': box.size,
+                            'category_id': box.label,
+                            'bbox': box.to_xywh()
                         }
                     ]
                     overall_annotation_id += 1
 
-
             label_object['images'] += [obj_im]
 
-            # label_object['annotations'] += [annotations]
-
-        with open(os.path.join(
-                './deepdrive',
-                'annotations/instances_{}{}.json'.format(fold, year))
-                , 'w') as f:
+        output_file = os.path.join(
+            './deepdrive',
+            'annotations/instances_{}{}.json'.format(fold, year))
+        with open(output_file, 'w') as f:
             json.dump(label_object, f)

@@ -119,6 +119,10 @@ if __name__ == '__main__':
         write_labels(label_object, INOUTDOOR_LABELS)
 
         for i, im in enumerate(images):
+            if i % 100 == 0:
+                print('\tFiles {}/{} written'.format(
+                    i, len(images)
+                ))
             head_im, tail_im = os.path.split(im)
             head_lb, tail_lb = os.path.split(labels[i])
 
@@ -138,8 +142,8 @@ if __name__ == '__main__':
             with open(labels[i], 'r') as f:
                 obj = yaml.load(f)
 
-            height, width = obj['annotation']['size']['height'], \
-                obj['annotation']['size']['width']
+            height, width = float(obj['annotation']['size']['height']), \
+                float(obj['annotation']['size']['width'])
 
             pil_im = Image.open(im)
 
@@ -147,8 +151,8 @@ if __name__ == '__main__':
                 'license': 1,
                 'url': '',
                 'file_name': tail_im,
-                'height': height,
-                'width': width,
+                'height': pil_im.size[1],
+                'width': pil_im.size[0],
                 'date_captured': datetime.now().strftime('%Y-%m-%d %H:%M:00'),
                 'id': i
                 # 'id': tail_im[:-4]
@@ -162,13 +166,20 @@ if __name__ == '__main__':
                     box2d = tmp['bndbox']
                     box2d = {key: int(value) for key, value in box2d.items()}
                     box = Boxes(box2d['xmin'], box2d['xmax'], box2d['ymin'], box2d['ymax'], tmp['name'])
-
-                    box_xywh = box.to_xywh(normalization=[width, height])
-                    box_yhwh = [box_
+                    # the boxes are annotated for the image size of 1920x1080
+                    box_xyxy = box.to_xyxy(Boxes.Normalizer(1920, 1080))
+                    # we rescale them to the actual image size used
+                    box = Boxes(
+                        xmin=box_xyxy[0] * pil_im.size[0],
+                        xmax=box_xyxy[2] * pil_im.size[0],
+                        ymin=box_xyxy[1] * pil_im.size[1],
+                        ymax=box_xyxy[3] * pil_im.size[1],
+                        label=box.label
+                    )
                     label_object['annotations'] += [
                         {
                             'segmentation': [],
-                            'area': box.dimension,
+                            'area': box.size,
                             'iscrowd': 0,
                             'image_id': i,
                             'id': overall_annotation_id,
